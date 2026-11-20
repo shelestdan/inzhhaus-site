@@ -1,12 +1,12 @@
 // ИНЖХАУС: анимации и поведение. Без JS всё содержимое видно и работает.
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Шапка: фон после первого экрана, прячется при прокрутке вниз
+// Фон шапки постепенно набирает плотность на первых 240 пикселях прокрутки.
 const head = document.querySelector('.head');
 let lastY = scrollY;
 const onScroll = () => {
   const y = scrollY;
-  head.classList.toggle('is-solid', y > 40);
+  head.style.setProperty('--head-opacity', Math.min(1, Math.max(0, y / 240)));
   head.classList.toggle('is-hidden', y > 400 && y > lastY && !document.querySelector('.drawer.is-open'));
   lastY = y;
 };
@@ -85,35 +85,6 @@ document.querySelectorAll('.marquee__track, .belt__track').forEach((t) => {
   t.innerHTML += t.innerHTML.replace(/<(span|div|img)/g, '<$1 aria-hidden="true"').replace(/alt="[^"]*"/g, 'alt=""');
 });
 
-// Подбор объектов: тип + системы (объект должен иметь все выбранные). Без JS видны все.
-document.querySelectorAll('[data-finder]').forEach((box) => {
-  const rows = [...document.querySelectorAll('.obj')];
-  const shown = box.querySelector('[data-shown]');
-  const empty = box.querySelector('.finder__empty');
-  const apply = () => {
-    const kind = box.querySelector('[name="kind"]:checked').value;
-    const need = [...box.querySelectorAll('.chips input:checked')].map((i) => i.value);
-    let k = 0;
-    rows.forEach((r) => {
-      const has = r.dataset.sys.split(' ');
-      const show = (kind === 'all' || r.dataset.kind === kind) && need.every((c) => has.includes(c));
-      const was = !r.hidden;
-      r.hidden = !show;
-      r.querySelectorAll('[data-c]').forEach((s) => s.classList.toggle('is-hit', need.includes(s.dataset.c)));
-      if (show && !was) { r.classList.remove('is-enter'); void r.offsetWidth; r.style.setProperty('--d', k++); r.classList.add('is-enter'); }
-    });
-    const n = rows.filter((r) => !r.hidden).length;
-    shown.textContent = n;
-    empty.hidden = n > 0;
-  };
-  box.addEventListener('change', apply);
-  box.querySelector('[data-reset]').addEventListener('click', () => {
-    box.querySelectorAll('.chips input').forEach((i) => { i.checked = false; });
-    box.querySelector('#k-all').checked = true;
-    apply();
-  });
-});
-
 // Раскрытие строки объекта
 document.querySelectorAll('.obj__btn').forEach((b) => b.addEventListener('click', () => {
   const open = b.getAttribute('aria-expanded') !== 'true';
@@ -124,7 +95,7 @@ document.querySelectorAll('.obj__btn').forEach((b) => b.addEventListener('click'
 // «Обсудить похожий объект»: подставляет объект в заявку
 document.querySelectorAll('[data-like]').forEach((a) => a.addEventListener('click', () => {
   const msg = document.querySelector('#f-msg');
-  const sys = a.closest('.obj').dataset.sys.split(' ').filter(Boolean).join(', ');
+  const sys = (a.closest('.obj').dataset.sys || '').split(' ').filter(Boolean).join(', ');
   if (msg) msg.value = `Похожий объект: ${a.dataset.like}` + (sys ? `. Системы: ${sys}` : '') + '. ';
   setTimeout(() => msg && msg.focus({ preventScroll: true }), 600);
 }));
